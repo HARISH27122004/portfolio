@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;1,300&display=swap');
+
+/* ── Full screen intro ── */
+.intro-screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ── Decorative pulsing rings ── */
+.intro-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 255, 204, 0.12);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: ringPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.intro-ring--1 {
+  width: 340px;
+  height: 340px;
+  animation-delay: 0s;
+}
+
+.intro-ring--2 {
+  width: 560px;
+  height: 560px;
+  animation-delay: 0.6s;
+  border-color: rgba(0, 170, 255, 0.08);
+}
+
+.intro-ring--3 {
+  width: 800px;
+  height: 800px;
+  animation-delay: 1.2s;
+  border-color: rgba(0, 255, 204, 0.05);
+}
+
+@keyframes ringPulse {
+  0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1);    }
+  50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.04); }
+}
+
+/* ── Content ── */
+.intro-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+  animation: introFadeIn 1s ease both;
+}
+
+@keyframes introFadeIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Label */
+.intro-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.5em;
+  color: #00ffcc;
+  opacity: 0.7;
+}
+
+/* Title */
+.intro-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.5rem, 9vw, 7rem);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 60px rgba(0, 255, 204, 0.15);
+}
+
+/* Subtitle */
+.intro-sub {
+  font-family: 'Barlow', sans-serif;
+  font-weight: 300;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  max-width: 360px;
+}
+
+/* ── CTA Button ── */
+.intro-btn {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 36px;
+  background: transparent;
+  border: 1px solid rgba(0, 255, 204, 0.5);
+  border-radius: 999px;
+  color: #fff;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, color 0.3s, box-shadow 0.3s;
+}
+
+/* Sheen fill on hover */
+.intro-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 120, 108, 0.15), rgba(0, 170, 255, 0.1));
+  opacity: 0;
+  transition: opacity 0.3s;
+  border-radius: inherit;
+}
+
+.intro-btn:hover::before {
+  opacity: 1;
+}
+
+.intro-btn:hover {
+  border-color: #00ffcc;
+  box-shadow: 0 0 28px rgba(0, 255, 204, 0.25);
+}
+
+.intro-btn:active {
+  transform: scale(0.97);
+}
+
+/* Play icon */
+.intro-btn-icon {
+  font-size: 0.75rem;
+  color: #00ffcc;
+  line-height: 1;
+}
