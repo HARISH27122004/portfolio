@@ -8,10 +8,10 @@
 
 /* ── Outer wrapper ── */
 .sf-wrap {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   background: #000;
-  opacity: 1;
-  transition: opacity 0.9s ease;
 }
 
 .sf-fadeout {
@@ -21,23 +21,18 @@
 
 /* ── Sticky viewport ── */
 .sf-sticky {
-  position: sticky;
-  top: 0;
-  width: 100%;
-  height: 100vh;
+  position: fixed;
+  inset: 0;
   overflow: hidden;
-  background: #000;
 }
-
 /* ── Both canvases stacked ── */
 .sf-canvas {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 0;
+  left: 0;
   display: block;
+  /* Do NOT set width/height here — JS controls it via canvas.style */
 }
-
 /* Base canvas — always visible underneath */
 .sf-canvas--base {
   z-index: 1;
@@ -117,9 +112,9 @@
 /* ── HUD ── */
 .sf-hud {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 20;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 .sf-progress {
@@ -156,7 +151,7 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  opacity: 1;
+  opacity: 0.8;
   transition: opacity 0.7s ease;
 }
 
@@ -167,7 +162,7 @@
 
 .sf-hint span {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 5rem;
+  font-size: 1rem;
   letter-spacing: 0.45em;
   color: rgba(208, 201, 201, 0.4);
 }

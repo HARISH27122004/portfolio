@@ -1,13 +1,37 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import '../styles/ScrollFilm.css';
 
-const SCROLL_THRESHOLD = 40; // px of scroll = 1 frame step
+// ── Desktop tuning (original logic) ───────────────────────────────────────
+const SCROLL_THRESHOLD = 40; // px of deltaY = 1 frame step
+
+// ── Mobile tuning (smooth lerp logic) ─────────────────────────────────────
+const TOUCH_SENSITIVITY  = 0.12;  // touch px dragged → fractional frames
+const LERP_SPEED         = 0.10;  // 0–1: how fast current catches target
+const COMPLETE_THRESHOLD = 0.5;   // frames from end to trigger completion
+const TOUCH_FRICTION     = 0.88;  // momentum decay after finger lifts
+
+// ── Detect mobile/touch device ─────────────────────────────────────────────
+const isMobile = () =>
+  'ontouchstart' in window ||
+  navigator.maxTouchPoints > 0 ||
+  window.matchMedia('(pointer: coarse)').matches;
 
 const ScrollFilm = ({ images = [], onComplete }) => {
   const canvasRef    = useRef(null);
   const imagesRef    = useRef([]);
+  const mobile       = useRef(false); // set once on mount
+
+  // ── Desktop state ──────────────────────────────────────────────────────
   const frameIdx     = useRef(0);
-  const scrollAccum  = useRef(0); // accumulated scroll delta
+  const scrollAccum  = useRef(0);
+
+  // ── Mobile state ───────────────────────────────────────────────────────
+  const targetFrame      = useRef(0);
+  const currentFrame     = useRef(0);
+  const touchVelocity    = useRef(0);
+  const lastTouchY       = useRef(null);
+  const rafId            = useRef(null);
+  const completedRef     = useRef(false);
 
   const [displayFrame, setDisplayFrame] = useState(0);
   const [loaded,       setLoaded]       = useState(false);
@@ -17,8 +41,9 @@ const ScrollFilm = ({ images = [], onComplete }) => {
 
   const totalFrames = images.length;
 
-  // ── Draw a frame onto the canvas ───────────────────────────────────────────
-  const drawTo = useCallback((canvas, idx) => {
+  // ── Draw ───────────────────────────────────────────────────────────────
+  const drawAt = useCallback((canvas, floatIdx) => {
+    const idx = Math.round(floatIdx);
     const img = imagesRef.current[idx];
     if (!canvas || !img || !img.complete) return;
 
@@ -29,9 +54,9 @@ const ScrollFilm = ({ images = [], onComplete }) => {
       canvas.height = H;
     }
 
-    const ctx   = canvas.getContext('2d');
-    const cAR   = W / H;
-    const iAR   = img.naturalWidth / img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    const cAR = W / H;
+    const iAR = img.naturalWidth / img.naturalHeight;
     let dW, dH;
     if (cAR > iAR) { dW = W; dH = W / iAR; }
     else            { dH = H; dW = H * iAR; }
@@ -39,8 +64,10 @@ const ScrollFilm = ({ images = [], onComplete }) => {
     ctx.drawImage(img, (W - dW) / 2, (H - dH) / 2, dW, dH);
   }, []);
 
-  // ── Trigger complete sequence ──────────────────────────────────────────────
+  // ── Shared complete trigger ────────────────────────────────────────────
   const triggerComplete = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
     setFadeOut(true);
     setTimeout(() => {
       setHidden(true);
@@ -48,87 +75,132 @@ const ScrollFilm = ({ images = [], onComplete }) => {
     }, 900);
   }, [onComplete]);
 
-  // ── Scroll handler: accumulate → step frames manually ─────────────────────
+  // ══════════════════════════════════════════════════════════════════════
+  // DESKTOP — original accumulator logic
+  // ══════════════════════════════════════════════════════════════════════
   const onWheel = useCallback((e) => {
-    if (fadeOut || hidden) return;
-    e.preventDefault(); // prevent page scroll while film is active
-
+    if (completedRef.current) return;
+    e.preventDefault();
     setHintVisible(false);
 
     scrollAccum.current += e.deltaY;
 
-    // Step forward frames
     while (scrollAccum.current >= SCROLL_THRESHOLD) {
       scrollAccum.current -= SCROLL_THRESHOLD;
       const next = frameIdx.current + 1;
       if (next >= totalFrames) {
         frameIdx.current = totalFrames - 1;
-        drawTo(canvasRef.current, frameIdx.current);
+        drawAt(canvasRef.current, frameIdx.current);
         setDisplayFrame(frameIdx.current);
         triggerComplete();
         return;
       }
       frameIdx.current = next;
-      drawTo(canvasRef.current, next);
+      drawAt(canvasRef.current, next);
       setDisplayFrame(next);
     }
 
-    // Step backward frames
     while (scrollAccum.current <= -SCROLL_THRESHOLD) {
       scrollAccum.current += SCROLL_THRESHOLD;
       const prev = frameIdx.current - 1;
       if (prev < 0) {
-        frameIdx.current = 0;
+        frameIdx.current    = 0;
         scrollAccum.current = 0;
         return;
       }
       frameIdx.current = prev;
-      drawTo(canvasRef.current, prev);
+      drawAt(canvasRef.current, prev);
       setDisplayFrame(prev);
     }
-  }, [fadeOut, hidden, totalFrames, drawTo, triggerComplete]);
+  }, [totalFrames, drawAt, triggerComplete]);
 
-  // ── Touch support ──────────────────────────────────────────────────────────
-  const touchStartY = useRef(null);
+  // ══════════════════════════════════════════════════════════════════════
+  // MOBILE — RAF lerp + momentum logic
+  // ══════════════════════════════════════════════════════════════════════
+  const tick = useCallback(() => {
+    if (!completedRef.current) {
+      // Decay touch momentum after finger lifts
+      if (Math.abs(touchVelocity.current) > 0.1) {
+        targetFrame.current = Math.max(
+          0,
+          Math.min(totalFrames - 1, targetFrame.current + touchVelocity.current)
+        );
+        touchVelocity.current *= TOUCH_FRICTION;
+      }
+
+      // Lerp toward target
+      const diff = targetFrame.current - currentFrame.current;
+      if (Math.abs(diff) > 0.01) {
+        currentFrame.current += diff * LERP_SPEED;
+        currentFrame.current  = Math.max(0, Math.min(totalFrames - 1, currentFrame.current));
+        drawAt(canvasRef.current, currentFrame.current);
+        setDisplayFrame(Math.round(currentFrame.current));
+
+        if (currentFrame.current >= totalFrames - 1 - COMPLETE_THRESHOLD) {
+          triggerComplete();
+        }
+      }
+    }
+    rafId.current = requestAnimationFrame(tick);
+  }, [totalFrames, drawAt, triggerComplete]);
 
   const onTouchStart = useCallback((e) => {
-    touchStartY.current = e.touches[0].clientY;
+    if (completedRef.current) return;
+    lastTouchY.current    = e.touches[0].clientY;
+    touchVelocity.current = 0;
+    setHintVisible(false);
   }, []);
 
   const onTouchMove = useCallback((e) => {
-    if (touchStartY.current === null || fadeOut || hidden) return;
+    if (completedRef.current || lastTouchY.current === null) return;
     e.preventDefault();
-    const deltaY = touchStartY.current - e.touches[0].clientY; // invert: drag up = forward
-    touchStartY.current = e.touches[0].clientY;
 
-    scrollAccum.current += deltaY;
+    const y     = e.touches[0].clientY;
+    const delta = lastTouchY.current - y; // up = forward
+    lastTouchY.current = y;
 
-    while (scrollAccum.current >= SCROLL_THRESHOLD) {
-      scrollAccum.current -= SCROLL_THRESHOLD;
-      const next = frameIdx.current + 1;
-      if (next >= totalFrames) {
-        frameIdx.current = totalFrames - 1;
-        drawTo(canvasRef.current, frameIdx.current);
-        setDisplayFrame(frameIdx.current);
-        triggerComplete();
-        return;
+    touchVelocity.current = delta * TOUCH_SENSITIVITY;
+    targetFrame.current   = Math.max(
+      0,
+      Math.min(totalFrames - 1, targetFrame.current + delta * TOUCH_SENSITIVITY)
+    );
+  }, [totalFrames]);
+
+  const onTouchEnd = useCallback(() => {
+    lastTouchY.current = null;
+    // velocity keeps decaying in tick()
+  }, []);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // MOUNT — detect device, attach correct listeners, start RAF if mobile
+  // ══════════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    mobile.current = isMobile();
+
+    if (mobile.current) {
+      // Mobile: smooth RAF loop + touch events
+      rafId.current = requestAnimationFrame(tick);
+      window.addEventListener('touchstart', onTouchStart, { passive: false });
+      window.addEventListener('touchmove',  onTouchMove,  { passive: false });
+      window.addEventListener('touchend',   onTouchEnd);
+    } else {
+      // Desktop: original wheel accumulator
+      window.addEventListener('wheel', onWheel, { passive: false });
+    }
+
+    return () => {
+      if (mobile.current) {
+        cancelAnimationFrame(rafId.current);
+        window.removeEventListener('touchstart', onTouchStart);
+        window.removeEventListener('touchmove',  onTouchMove);
+        window.removeEventListener('touchend',   onTouchEnd);
+      } else {
+        window.removeEventListener('wheel', onWheel);
       }
-      frameIdx.current = next;
-      drawTo(canvasRef.current, next);
-      setDisplayFrame(next);
-    }
+    };
+  }, [tick, onWheel, onTouchStart, onTouchMove, onTouchEnd]);
 
-    while (scrollAccum.current <= -SCROLL_THRESHOLD) {
-      scrollAccum.current += SCROLL_THRESHOLD;
-      const prev = frameIdx.current - 1;
-      if (prev < 0) { frameIdx.current = 0; scrollAccum.current = 0; return; }
-      frameIdx.current = prev;
-      drawTo(canvasRef.current, prev);
-      setDisplayFrame(prev);
-    }
-  }, [fadeOut, hidden, totalFrames, drawTo, triggerComplete]);
-
-  // ── Preload images ─────────────────────────────────────────────────────────
+  // ── Preload ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!images.length) return;
     let count = 0;
@@ -141,34 +213,24 @@ const ScrollFilm = ({ images = [], onComplete }) => {
         count++;
         if (count === images.length) {
           setLoaded(true);
-          requestAnimationFrame(() => drawTo(canvasRef.current, 0));
+          requestAnimationFrame(() => drawAt(canvasRef.current, 0));
         }
       };
       img.onerror = () => console.error(`Failed to load frame ${i}:`, src);
       img.src = src;
       imagesRef.current[i] = img;
     });
-  }, [images, drawTo]);
+  }, [images, drawAt]);
 
-  // ── Attach wheel + touch listeners (passive: false to allow preventDefault) 
+  // ── Resize ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const el = window;
-    el.addEventListener('wheel',      onWheel,      { passive: false });
-    el.addEventListener('touchstart', onTouchStart, { passive: false });
-    el.addEventListener('touchmove',  onTouchMove,  { passive: false });
-    return () => {
-      el.removeEventListener('wheel',      onWheel);
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchmove',  onTouchMove);
+    const onResize = () => {
+      const idx = mobile.current ? currentFrame.current : frameIdx.current;
+      drawAt(canvasRef.current, idx);
     };
-  }, [onWheel, onTouchStart, onTouchMove]);
-
-  // ── Resize ─────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const onResize = () => drawTo(canvasRef.current, frameIdx.current);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [drawTo]);
+  }, [drawAt]);
 
   if (hidden) return null;
 
@@ -202,7 +264,6 @@ const ScrollFilm = ({ images = [], onComplete }) => {
         </div>
       </div>
 
-      {/* Spacer only needed if you want the page to be scrollable underneath */}
       <div className="sf-spacer" />
     </div>
   );
