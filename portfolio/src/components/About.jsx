@@ -2,14 +2,15 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import '../styles/About.css';
+import resume from '../pdf/HarishFullStackWebDeveloper.pdf'
 
 gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
-  { num: '5+', label: 'Years Experience' },
-  { num: '40+', label: 'Projects Shipped' },
-  { num: '15+', label: 'Happy Clients' },
-  { num: '99%', label: 'Client Satisfaction' },
+  { num: '10+', label: 'Projects Built' },
+  { num: '8+', label: 'Technologies Learned' },
+  { num: '100+', label: 'Github Commits' },
+  { num: '100%', label: 'Passion for Code' },
 ];
 
 export default function About() {
@@ -72,29 +73,31 @@ export default function About() {
               scalable web applications with modern tech stacks.
             </p>
             <p>
-              When I'm not coding, you'll find me exploring the latest in generative AI,
-              contributing to open-source, or deep in a 3D modeling rabbit hole.
-              I believe the best products live at the intersection of design thinking and robust engineering.
+              When I'm not coding, you'll find me keeping up with the latest
+              in AI, taking on new challenges through personal projects, or
+              learning something new just for the love of it. I believe the
+              best developers never stop being students.
             </p>
           </div>
 
           {/* Tags */}
           <div className="about__tags">
-            {['Problem Solver', 'UI/UX Enthusiast', 'Open Source', 'AI Explorer'].map(tag => (
+            {['Problem Solver', 'UI/UX Enthusiast', 'Team Player', 'AI Explorer'].map(tag => (
               <span key={tag} className="about__tag">{tag}</span>
             ))}
           </div>
 
           <a
-            href="/resume.pdf"
+            href={resume}
             className="about__resume-btn"
             target="_blank"
             rel="noopener noreferrer"
+            download="HarishFullStackWebDeveloper.pdf"
             data-hover
           >
             <span>Download Resume</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 15V3M12 15l-4-4M12 15l4-4M3 21h18"/>
+              <path d="M12 15V3M12 15l-4-4M12 15l4-4M3 21h18" />
             </svg>
           </a>
         </div>
@@ -125,9 +128,9 @@ export default function About() {
                 <span className="about__card-role">Full Stack Developer</span>
               </div>
               <div className="about__card-code">
-                <span className="about__code-line"><span style={{color:'#b44fff'}}>const</span> me = {'{'}</span>
-                <span className="about__code-line">&nbsp;&nbsp;role: <span style={{color:'#00ff9f'}}>"Dev"</span>,</span>
-                <span className="about__code-line">&nbsp;&nbsp;passion: <span style={{color:'#00ff9f'}}>"∞"</span></span>
+                <span className="about__code-line"><span style={{ color: '#b44fff' }}>const</span> me = {'{'}</span>
+                <span className="about__code-line">&nbsp;&nbsp;role: <span style={{ color: '#00ff9f' }}>"Dev"</span>,</span>
+                <span className="about__code-line">&nbsp;&nbsp;passion: <span style={{ color: '#00ff9f' }}>"∞"</span></span>
                 <span className="about__code-line">{'}'}</span>
               </div>
             </div>

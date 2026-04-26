@@ -37,7 +37,7 @@ const App = () => {
             <h1 className="intro-title">Step Into<br />A New World</h1>
             <p className="intro-sub">
               An immersive scroll journey awaits.<br />
-              Press play when you're ready.
+              Press the button when you're ready.
             </p>
             <button
               className="intro-btn"
