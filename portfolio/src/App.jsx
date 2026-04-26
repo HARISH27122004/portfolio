@@ -23,6 +23,7 @@ const App = () => {
 
   return (
     <>
+            <Cursor />
       {/* ── Stage 1: Intro button screen ── */}
       {stage === 'intro' && (
         <div className="intro-screen">
@@ -67,7 +68,6 @@ const App = () => {
       {/* ── Stage 3: Hero section ── */}
       {stage === 'hero' && (<>
         <div className="grid-bg" />
-        <Cursor />
         <Nav />
         <main>
           <Hero />

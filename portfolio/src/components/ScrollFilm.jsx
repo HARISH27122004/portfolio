@@ -252,11 +252,7 @@ const ScrollFilm = ({ images = [], onComplete }) => {
 
         <div className="sf-hud">
           <div className="sf-progress" style={{ width: `${progress}%` }} />
-          <div className="sf-counter">
-            {String(displayFrame + 1).padStart(2, '0')}
-            <span className="sf-counter-sep"> / </span>
-            {String(totalFrames).padStart(2, '0')}
-          </div>
+         
           <div className={`sf-hint${hintVisible ? '' : ' sf-hint--hidden'}`}>
             <span>SCROLL TO PLAY</span>
             <div className="sf-arrow" />

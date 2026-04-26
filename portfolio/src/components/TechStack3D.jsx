@@ -686,7 +686,6 @@ export default function TechStack3D() {
         <h2 className="tech__heading">
           Tech <span className="tech__heading-accent">Stack</span>
         </h2>
-        <p className="tech__desc">Click a cube to explore.</p>
       </div>
 
       <div

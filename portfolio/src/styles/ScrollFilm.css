@@ -132,17 +132,6 @@
   transition: width 0.12s linear;
 }
 
-.sf-counter {
-  position: absolute;
-  top: 28px;
-  right: 32px;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem;
-  letter-spacing: 0.25em;
-  color: rgba(255, 255, 255, 0.5);
-  text-shadow: 0 0 12px rgba(0, 255, 204, 0.25);
-}
-
 .sf-counter-sep {
   color: rgba(255, 255, 255, 0.18);
 }
